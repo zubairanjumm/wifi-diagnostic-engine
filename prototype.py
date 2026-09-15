@@ -1,6 +1,9 @@
 import socket
 import subprocess
 import time
+import re
+
+from app.network.dns import measure_dns_latency
 
 
 # --------------------------------------------------
@@ -40,38 +43,56 @@ def get_default_gateway():
 
 def test_router(gateway):
     """
-    Checks whether we can reach the home router.
+    Measures connectivity and packet loss to the home router.
     """
 
     if not gateway:
         return {
             "status": "failed",
+            "packet_loss_percent": None,
             "message": "Could not find the default gateway."
         }
 
     try:
         result = subprocess.run(
-            ["ping", "-n", "4", gateway],
+            ["ping", "-n", "10", gateway],
             capture_output=True,
             text=True,
             encoding="utf-8",
             errors="ignore"
         )
 
-        if result.returncode == 0:
+        loss_match = re.search(
+            r"\((\d+)%\s*loss\)",
+            result.stdout
+        )
+
+        if not loss_match:
+            return {
+                "status": "failed",
+                "packet_loss_percent": None,
+                "message": "Could not determine router packet loss."
+            }
+
+        packet_loss = float(loss_match.group(1))
+
+        if packet_loss < 100:
             return {
                 "status": "ok",
+                "packet_loss_percent": packet_loss,
                 "message": f"Router {gateway} is reachable."
             }
 
         return {
             "status": "failed",
+            "packet_loss_percent": packet_loss,
             "message": f"Router {gateway} is not reachable."
         }
 
     except Exception as e:
         return {
             "status": "failed",
+            "packet_loss_percent": None,
             "message": str(e)
         }
 
@@ -82,34 +103,51 @@ def test_router(gateway):
 
 def test_internet():
     """
-    Checks whether the computer can reach the internet.
+    Measures internet connectivity and packet loss.
     """
 
     target = "8.8.8.8"
 
     try:
         result = subprocess.run(
-            ["ping", "-n", "4", target],
+            ["ping", "-n", "10", target],
             capture_output=True,
             text=True,
             encoding="utf-8",
             errors="ignore"
         )
 
-        if result.returncode == 0:
+        loss_match = re.search(
+            r"\((\d+)%\s*loss\)",
+            result.stdout
+        )
+
+        if not loss_match:
+            return {
+                "status": "failed",
+                "packet_loss_percent": None,
+                "message": "Could not determine internet packet loss."
+            }
+
+        packet_loss = float(loss_match.group(1))
+
+        if packet_loss < 100:
             return {
                 "status": "ok",
+                "packet_loss_percent": packet_loss,
                 "message": "Internet is reachable."
             }
 
         return {
             "status": "failed",
+            "packet_loss_percent": packet_loss,
             "message": "Internet is not reachable."
         }
 
     except Exception as e:
         return {
             "status": "failed",
+            "packet_loss_percent": None,
             "message": str(e)
         }
 
@@ -145,37 +183,48 @@ def test_dns():
 # --------------------------------------------------
 
 def measure_latency():
-    """
-    Measures approximate latency to Google's DNS server.
-    """
-
     target = "8.8.8.8"
 
     try:
-        start = time.perf_counter()
-
         result = subprocess.run(
-            ["ping", "-n", "1", target],
+            ["ping", "-n", "10", target],
             capture_output=True,
             text=True,
             encoding="utf-8",
             errors="ignore"
         )
 
-        end = time.perf_counter()
+        latencies = []
 
-        if result.returncode == 0:
-            latency_ms = round((end - start) * 1000, 2)
+        for line in result.stdout.splitlines():
+            match = re.search(r"time[=<](\d+(?:\.\d+)?)ms", line)
 
+            if match:
+                latencies.append(float(match.group(1)))
+
+        if not latencies:
             return {
-                "status": "ok",
-                "latency_ms": latency_ms,
-                "message": f"Latency is approximately {latency_ms} ms."
+                "status": "failed",
+                "message": "Could not measure latency."
             }
 
+        minimum = min(latencies)
+        maximum = max(latencies)
+        average = sum(latencies) / len(latencies)
+        jitter = maximum - minimum
+
         return {
-            "status": "failed",
-            "message": "Could not measure latency."
+            "status": "ok",
+            "min_ms": round(minimum, 2),
+            "average_ms": round(average, 2),
+            "max_ms": round(maximum, 2),
+            "jitter_ms": round(jitter, 2),
+            "message": (
+                f"Average latency: {average:.2f} ms | "
+                f"Min: {minimum:.2f} ms | "
+                f"Max: {maximum:.2f} ms | "
+                f"Jitter: {jitter:.2f} ms"
+            )
         }
 
     except Exception as e:
@@ -183,7 +232,6 @@ def measure_latency():
             "status": "failed",
             "message": str(e)
         }
-
 
 # --------------------------------------------------
 # 6. RUN COMPLETE DIAGNOSTIC
@@ -210,17 +258,39 @@ def run_diagnostic():
 
     print(f"    {router_result['message']}")
 
+    if router_result["packet_loss_percent"] is not None:
+        print(
+            f"    Router packet loss: "
+            f"{router_result['packet_loss_percent']:.1f}%"
+        )
+
     print("\n[3] Testing internet connectivity...")
 
     internet_result = test_internet()
 
     print(f"    {internet_result['message']}")
 
+    if internet_result["packet_loss_percent"] is not None:
+        print(
+            f"    Internet packet loss: "
+            f"{internet_result['packet_loss_percent']:.1f}%"
+        )
+
     print("\n[4] Testing DNS...")
 
     dns_result = test_dns()
 
     print(f"    {dns_result['message']}")
+
+    dns_latency = measure_dns_latency()
+
+    if dns_latency is not None:
+        print(
+            f"    DNS response time: "
+            f"{dns_latency:.1f} ms"
+        )
+    else:
+        print("    DNS response time: unavailable")
 
     print("\n[5] Measuring latency...")
 
@@ -237,27 +307,34 @@ def run_diagnostic():
     print("=" * 50)
 
     if router_result["status"] == "failed":
+
         print("\nProblem: Your computer cannot reach your router.")
         print("Likely area: Local Wi-Fi/network connection.")
 
     elif internet_result["status"] == "failed":
+
         print("\nProblem: Your router is reachable, but the internet")
         print("cannot be reached.")
         print("Likely area: ISP/modem/internet connection.")
 
     elif dns_result["status"] == "failed":
+
         print("\nProblem: Internet connectivity works, but DNS")
         print("resolution is failing.")
         print("Likely area: DNS configuration/service.")
 
     else:
+
         print("\nNo obvious connectivity problem detected.")
         print("Router: reachable")
         print("Internet: reachable")
         print("DNS: working")
 
-        if latency_result["status"] == "ok":
-            print(f"Latency: {latency_result['latency_ms']} ms")
+    if latency_result["status"] == "ok":
+        print(f"Average latency: {latency_result['average_ms']} ms")
+        print(f"Minimum latency: {latency_result['min_ms']} ms")
+        print(f"Maximum latency: {latency_result['max_ms']} ms")
+        print(f"Jitter: {latency_result['jitter_ms']} ms")
 
     print("\n" + "=" * 50)
 
@@ -268,3 +345,4 @@ def run_diagnostic():
 
 if __name__ == "__main__":
     run_diagnostic()
+

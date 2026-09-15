@@ -1,16 +1,29 @@
 import socket
+import time
 
 
-def resolve_hostname(hostname: str) -> str | None:
-    """Resolve a hostname and return its IP address."""
+def test_dns(hostname: str = "google.com") -> bool:
+    """Check whether DNS resolution is working."""
 
     try:
-        return socket.gethostbyname(hostname)
+        socket.gethostbyname(hostname)
+        return True
+    except socket.gaierror:
+        return False
+
+
+def measure_dns_latency(
+    hostname: str = "google.com",
+) -> float | None:
+    """Measure how long DNS resolution takes."""
+
+    start = time.perf_counter()
+
+    try:
+        socket.gethostbyname(hostname)
     except socket.gaierror:
         return None
 
+    end = time.perf_counter()
 
-def test_dns() -> bool:
-    """Check whether DNS resolution is working."""
-
-    return resolve_hostname("google.com") is not None
+    return (end - start) * 1000
