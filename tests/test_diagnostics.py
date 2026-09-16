@@ -247,3 +247,56 @@ def test_packet_loss_takes_priority_over_jitter():
     )
 
     assert diagnose(evidence) == "internet_path_instability"
+
+# Browser Evidence Tests!
+
+def test_browser_connection_instability():
+    evidence = NetworkEvidence(
+        request_failure_rate=25.0,
+    )
+
+    result = diagnose(evidence)
+
+    assert result == "browser_connection_instability"
+
+
+def test_browser_failure_rate_below_threshold():
+    evidence = NetworkEvidence(
+        request_failure_rate=10.0,
+    )
+
+    result = diagnose(evidence)
+
+    assert result == "no_obvious_problem"
+
+
+def test_browser_high_jitter():
+    evidence = NetworkEvidence(
+        browser_latency_jitter_ms=120.0,
+    )
+
+    result = diagnose(evidence)
+
+    assert result == "high_jitter"
+
+
+def test_browser_high_latency():
+    evidence = NetworkEvidence(
+        browser_latency_average_ms=200.0,
+    )
+
+    result = diagnose(evidence)
+
+    assert result == "high_latency"
+
+
+def test_browser_normal_latency():
+    evidence = NetworkEvidence(
+        browser_latency_average_ms=50.0,
+        browser_latency_jitter_ms=20.0,
+        request_failure_rate=5.0,
+    )
+
+    result = diagnose(evidence)
+
+    assert result == "no_obvious_problem"

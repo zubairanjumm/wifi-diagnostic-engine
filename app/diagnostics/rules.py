@@ -2,10 +2,16 @@ from app.diagnostics.models import NetworkEvidence
 
 
 HIGH_JITTER_THRESHOLD_MS = 100.0
+HIGH_LATENCY_THRESHOLD_MS = 150.0
+BROWSER_FAILURE_RATE_THRESHOLD_PERCENT = 20.0
 
 
 def diagnose(evidence: NetworkEvidence) -> str:
     """Determine the most likely network problem from collected evidence."""
+
+    # -------------------------
+    # Windows/local network rules
+    # -------------------------
 
     if evidence.router_reachable is False:
         return "local_network_problem"
@@ -42,7 +48,32 @@ def diagnose(evidence: NetworkEvidence) -> str:
 
     if (
         evidence.internet_latency_average_ms is not None
-        and evidence.internet_latency_average_ms > 150
+        and evidence.internet_latency_average_ms > HIGH_LATENCY_THRESHOLD_MS
+    ):
+        return "high_latency"
+
+    # -------------------------
+    # Browser evidence rules
+    # -------------------------
+
+    if (
+        evidence.request_failure_rate is not None
+        and evidence.request_failure_rate
+        >= BROWSER_FAILURE_RATE_THRESHOLD_PERCENT
+    ):
+        return "browser_connection_instability"
+
+    if (
+        evidence.browser_latency_jitter_ms is not None
+        and evidence.browser_latency_jitter_ms
+        >= HIGH_JITTER_THRESHOLD_MS
+    ):
+        return "high_jitter"
+
+    if (
+        evidence.browser_latency_average_ms is not None
+        and evidence.browser_latency_average_ms
+        > HIGH_LATENCY_THRESHOLD_MS
     ):
         return "high_latency"
 

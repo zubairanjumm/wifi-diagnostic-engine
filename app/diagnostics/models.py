@@ -20,3 +20,16 @@ class NetworkEvidence:
 
     router_packet_loss_percent: float | None = None
     internet_packet_loss_percent: float | None = None
+
+        # Browser-collected evidence
+    https_reachable: bool | None = None
+    request_success_rate: float | None = None
+    request_failure_rate: float | None = None
+
+    browser_latency_min_ms: float | None = None
+    browser_latency_average_ms: float | None = None
+    browser_latency_max_ms: float | None = None
+    browser_latency_jitter_ms: float | None = None
+
+    download_mbps: float | None = None
+    upload_mbps: float | None = None
