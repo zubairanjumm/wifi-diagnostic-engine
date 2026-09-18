@@ -76,3 +76,11 @@ def test_diagnose_rejects_invalid_percentage():
     )
 
     assert response.status_code == 422
+
+def test_diagnostic_test_endpoint():
+    response = client.get("/api/diagnostic-test")
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "status": "ok",
+    }

@@ -31,3 +31,10 @@ def diagnose_browser_evidence(
     return DiagnosticResponse(
         diagnosis=result,
     )
+
+
+@router.get("/diagnostic-test")
+def diagnostic_test():
+    return {
+        "status": "ok",
+    }

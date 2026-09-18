@@ -17,7 +17,7 @@ function App() {
 
     try {
       const browserEvidence = await collectBrowserEvidence(
-        window.location.origin,
+        "http://127.0.0.1:8000/api/diagnostic-test",
       )
 
       setEvidence(browserEvidence)
