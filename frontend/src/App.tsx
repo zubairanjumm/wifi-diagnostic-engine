@@ -1,9 +1,11 @@
 import { useState } from "react"
 import { collectBrowserEvidence } from "./diagnostics/browser"
+import { diagnoseBrowserEvidence } from "./api/diagnosticApi"
 import type { BrowserEvidence } from "./types/diagnostic"
 
 function App() {
   const [evidence, setEvidence] = useState<BrowserEvidence | null>(null)
+  const [diagnosis, setDiagnosis] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -11,15 +13,22 @@ function App() {
     setLoading(true)
     setError(null)
     setEvidence(null)
+    setDiagnosis(null)
 
     try {
-      const result = await collectBrowserEvidence(
+      const browserEvidence = await collectBrowserEvidence(
         window.location.origin,
       )
 
-      setEvidence(result)
+      setEvidence(browserEvidence)
+
+      const diagnosticResult = await diagnoseBrowserEvidence(
+        browserEvidence,
+      )
+
+      setDiagnosis(diagnosticResult.diagnosis)
     } catch {
-      setError("Failed to collect browser network evidence.")
+      setError("Failed to complete the diagnostic.")
     } finally {
       setLoading(false)
     }
@@ -33,7 +42,7 @@ function App() {
         </h1>
 
         <p className="mt-3 text-gray-600">
-          Collect browser network evidence.
+          Test your internet connection.
         </p>
 
         <button
@@ -104,6 +113,18 @@ function App() {
                 {evidence.browser_latency_jitter_ms?.toFixed(2)} ms
               </strong>
             </p>
+
+            {diagnosis && (
+              <div className="mt-6 border-t border-gray-200 pt-6">
+                <h2 className="text-xl font-medium">
+                  Diagnosis
+                </h2>
+
+                <p className="mt-2">
+                  {diagnosis}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
