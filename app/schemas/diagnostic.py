@@ -46,6 +46,8 @@ class BrowserEvidenceRequest(BaseModel):
         ge=0,
     )
 
-
 class DiagnosticResponse(BaseModel):
     diagnosis: str
+    title: str
+    message: str
+    next_action: str

@@ -1,134 +1,97 @@
 import { useState } from "react"
+
 import { collectBrowserEvidence } from "./diagnostics/browser"
 import { diagnoseBrowserEvidence } from "./api/diagnosticApi"
-import type { BrowserEvidence } from "./types/diagnostic"
+
+import { Header } from "./components/Header"
+
+import { HomePage } from "./pages/HomePage"
+import { DiagnosticPage } from "./pages/DiagnosticPage"
+import { ResultPage } from "./pages/ResultPage"
+
+import type {
+  BrowserEvidence,
+  DiagnosticResponse,
+} from "./types/diagnostic"
+
+type Page =
+  | "home"
+  | "diagnostic"
+  | "result"
 
 function App() {
-  const [evidence, setEvidence] = useState<BrowserEvidence | null>(null)
-  const [diagnosis, setDiagnosis] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState<Page>("home")
+  const [evidence, setEvidence] =
+    useState<BrowserEvidence | null>(null)
+  const [result, setResult] =
+    useState<DiagnosticResponse | null>(null)
+  const [error, setError] =
+    useState<string | null>(null)
 
   async function runDiagnostic() {
-    setLoading(true)
+    setPage("diagnostic")
     setError(null)
     setEvidence(null)
-    setDiagnosis(null)
+    setResult(null)
 
     try {
-      const browserEvidence = await collectBrowserEvidence(
-        "http://127.0.0.1:8000/api/diagnostic-test",
-      )
+      const endpoint =
+        `${import.meta.env.VITE_API_URL}/api/diagnostic-test`
+
+      const browserEvidence =
+        await collectBrowserEvidence(endpoint)
 
       setEvidence(browserEvidence)
 
-      const diagnosticResult = await diagnoseBrowserEvidence(
-        browserEvidence,
-      )
+      const diagnosticResult =
+        await diagnoseBrowserEvidence(
+          browserEvidence,
+        )
 
-      setDiagnosis(diagnosticResult.diagnosis)
+      setResult(diagnosticResult)
+      setPage("result")
     } catch {
-      setError("Failed to complete the diagnostic.")
-    } finally {
-      setLoading(false)
+      setError(
+        "Failed to complete the diagnostic.",
+      )
     }
   }
 
+  function goHome() {
+    setPage("home")
+    setError(null)
+  }
+
   return (
-    <main className="min-h-screen bg-white text-black flex items-center justify-center px-6">
-      <div className="w-full max-w-2xl">
-        <h1 className="text-4xl font-semibold">
-          WiFi Diagnostic
-        </h1>
+    <div className="min-h-screen bg-white text-black">
+      <Header
+        onRunDiagnostic={runDiagnostic}
+      />
 
-        <p className="mt-3 text-gray-600">
-          Test your internet connection.
-        </p>
+      {page === "home" && (
+        <HomePage
+          onRunDiagnostic={runDiagnostic}
+        />
+      )}
 
-        <button
-          onClick={runDiagnostic}
-          disabled={loading}
-          className="mt-8 rounded-lg bg-black px-6 py-3 text-white disabled:opacity-50"
-        >
-          {loading ? "Testing..." : "Run Diagnostic"}
-        </button>
+      {page === "diagnostic" && (
+        <DiagnosticPage
+          error={error}
+          onRetry={runDiagnostic}
+        />
+      )}
 
-        {error && (
-          <p className="mt-6 text-red-600">
-            {error}
-          </p>
+      {page === "result" &&
+        evidence &&
+        result && (
+          <ResultPage
+            evidence={evidence}
+            result={result}
+            onRunAgain={runDiagnostic}
+            onHome={goHome}
+          />
         )}
-
-        {evidence && (
-          <div className="mt-8 space-y-3 rounded-xl border border-gray-200 p-6">
-            <h2 className="text-xl font-medium">
-              Browser Evidence
-            </h2>
-
-            <p>
-              HTTPS reachable:{" "}
-              <strong>
-                {String(evidence.https_reachable)}
-              </strong>
-            </p>
-
-            <p>
-              Request success rate:{" "}
-              <strong>
-                {evidence.request_success_rate?.toFixed(1)}%
-              </strong>
-            </p>
-
-            <p>
-              Request failure rate:{" "}
-              <strong>
-                {evidence.request_failure_rate?.toFixed(1)}%
-              </strong>
-            </p>
-
-            <p>
-              Minimum latency:{" "}
-              <strong>
-                {evidence.browser_latency_min_ms?.toFixed(2)} ms
-              </strong>
-            </p>
-
-            <p>
-              Average latency:{" "}
-              <strong>
-                {evidence.browser_latency_average_ms?.toFixed(2)} ms
-              </strong>
-            </p>
-
-            <p>
-              Maximum latency:{" "}
-              <strong>
-                {evidence.browser_latency_max_ms?.toFixed(2)} ms
-              </strong>
-            </p>
-
-            <p>
-              Jitter:{" "}
-              <strong>
-                {evidence.browser_latency_jitter_ms?.toFixed(2)} ms
-              </strong>
-            </p>
-
-            {diagnosis && (
-              <div className="mt-6 border-t border-gray-200 pt-6">
-                <h2 className="text-xl font-medium">
-                  Diagnosis
-                </h2>
-
-                <p className="mt-2">
-                  {diagnosis}
-                </p>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-    </main>
+    </div>
   )
 }
 

@@ -6,9 +6,8 @@ from app.schemas.diagnostic import (
     BrowserEvidenceRequest,
     DiagnosticResponse,
 )
-
+from app.diagnostics.explanations import explain_diagnosis
 router = APIRouter()
-
 
 @router.post("/diagnose", response_model=DiagnosticResponse)
 def diagnose_browser_evidence(
@@ -25,11 +24,15 @@ def diagnose_browser_evidence(
         download_mbps=evidence.download_mbps,
         upload_mbps=evidence.upload_mbps,
     )
-
+    
     result = diagnose(network_evidence)
+    explanation = explain_diagnosis(result)
 
     return DiagnosticResponse(
         diagnosis=result,
+        title=explanation.title,
+        message=explanation.message,
+        next_action=explanation.next_action,
     )
 
 

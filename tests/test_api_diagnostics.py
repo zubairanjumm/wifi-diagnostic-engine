@@ -21,8 +21,18 @@ def test_diagnose_normal_browser_evidence():
     )
 
     assert response.status_code == 200
+
     assert response.json() == {
         "diagnosis": "no_obvious_problem",
+        "title": "Your connection looks stable",
+        "message": (
+            "We did not detect significant connection failures, "
+            "latency problems, or instability."
+        ),
+        "next_action": (
+            "If you're still having problems, run the diagnostic again "
+            "while the problem is happening."
+        ),
     }
 
 
@@ -41,8 +51,18 @@ def test_diagnose_browser_instability():
     )
 
     assert response.status_code == 200
+
     assert response.json() == {
         "diagnosis": "browser_connection_instability",
+        "title": "Your connection appears unstable",
+        "message": (
+            "Some connection requests are failing repeatedly. "
+            "This can cause pages, apps, or videos to load inconsistently."
+        ),
+        "next_action": (
+            "Move closer to your router if possible, then run the "
+            "diagnostic again."
+        ),
     }
 
 
@@ -61,8 +81,17 @@ def test_diagnose_high_jitter():
     )
 
     assert response.status_code == 200
+
     assert response.json() == {
         "diagnosis": "high_jitter",
+        "title": "Your connection is fluctuating",
+        "message": (
+            "The delay between requests is changing significantly. "
+            "This can cause problems with calls, gaming, and live video."
+        ),
+        "next_action": (
+            "Move closer to your router and run the diagnostic again."
+        ),
     }
 
 
@@ -77,10 +106,11 @@ def test_diagnose_rejects_invalid_percentage():
 
     assert response.status_code == 422
 
+
 def test_diagnostic_test_endpoint():
     response = client.get("/api/diagnostic-test")
 
     assert response.status_code == 200
-    assert response.json() == {
-        "status": "ok",
-    }
+
+    assert response.json()["status"] == "ok"
+    assert "timestamp" in response.json()

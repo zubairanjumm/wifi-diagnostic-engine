@@ -33,7 +33,10 @@ function calculateAverage(values: number[]): number | null {
     return null
   }
 
-  return values.reduce((sum, value) => sum + value, 0) / values.length
+  return (
+    values.reduce((sum, value) => sum + value, 0) /
+    values.length
+  )
 }
 
 function calculateJitter(values: number[]): number | null {
@@ -44,7 +47,9 @@ function calculateJitter(values: number[]): number | null {
   let totalDifference = 0
 
   for (let i = 1; i < values.length; i++) {
-    totalDifference += Math.abs(values[i] - values[i - 1])
+    totalDifference += Math.abs(
+      values[i] - values[i - 1],
+    )
   }
 
   return totalDifference / (values.length - 1)
@@ -59,9 +64,7 @@ export async function collectBrowserEvidence(
   for (let i = 0; i < requestCount; i++) {
     const url = `${endpoint}?test=${Date.now()}-${i}`
 
-    const result = await testRequest(url)
-
-    results.push(result)
+    results.push(await testRequest(url))
   }
 
   const successfulRequests = results.filter(
@@ -70,7 +73,10 @@ export async function collectBrowserEvidence(
 
   const successfulLatencies = successfulRequests
     .map((result) => result.latencyMs)
-    .filter((latency): latency is number => latency !== null)
+    .filter(
+      (latency): latency is number =>
+        latency !== null,
+    )
 
   const successRate =
     (successfulRequests.length / results.length) * 100
@@ -78,7 +84,8 @@ export async function collectBrowserEvidence(
   const failureRate = 100 - successRate
 
   return {
-    https_reachable: successfulRequests.length > 0,
+    https_reachable:
+      successfulRequests.length > 0,
 
     request_success_rate: successRate,
     request_failure_rate: failureRate,

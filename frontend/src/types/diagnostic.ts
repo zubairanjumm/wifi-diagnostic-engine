@@ -12,3 +12,10 @@ export interface BrowserEvidence {
   download_mbps: number | null
   upload_mbps: number | null
 }
+
+export interface DiagnosticResponse {
+  diagnosis: string
+  title: string
+  message: string
+  next_action: string
+}
