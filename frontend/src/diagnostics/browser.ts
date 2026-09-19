@@ -59,7 +59,9 @@ function calculatePercentile(
   )
 }
 
-function calculateJitter(values: number[]): number | null {
+function calculateJitter(
+  values: number[],
+): number | null {
   if (values.length < 2) {
     return null
   }
@@ -72,7 +74,10 @@ function calculateJitter(values: number[]): number | null {
     )
   }
 
-  return totalDifference / (values.length - 1)
+  return (
+    totalDifference /
+    (values.length - 1)
+  )
 }
 
 async function testRequest(
@@ -109,7 +114,7 @@ async function measureDownloadSpeed(
 
   try {
     const response = await fetch(
-      `${endpoint}?size_mb=3&test=${Date.now()}`,
+      `${endpoint}?size_mb=10&test=${Date.now()}`,
       {
         method: "GET",
         cache: "no-store",
@@ -120,12 +125,14 @@ async function measureDownloadSpeed(
       return null
     }
 
-    const reader = response.body.getReader()
+    const reader =
+      response.body.getReader()
 
     let totalBytes = 0
 
     while (true) {
-      const { done, value } = await reader.read()
+      const { done, value } =
+        await reader.read()
 
       if (done) {
         break
@@ -139,7 +146,10 @@ async function measureDownloadSpeed(
     const elapsedSeconds =
       (performance.now() - start) / 1000
 
-    if (elapsedSeconds <= 0 || totalBytes === 0) {
+    if (
+      elapsedSeconds <= 0 ||
+      totalBytes === 0
+    ) {
       return null
     }
 
@@ -156,9 +166,11 @@ async function measureDownloadSpeed(
 async function measureUploadSpeed(
   endpoint: string,
 ): Promise<number | null> {
-  const sizeBytes = 1 * 1024 * 1024
+  const sizeBytes =
+    5 * 1024 * 1024
 
-  const payload = new Uint8Array(sizeBytes)
+  const payload =
+    new Uint8Array(sizeBytes)
 
   const start = performance.now()
 
@@ -168,7 +180,8 @@ async function measureUploadSpeed(
       {
         method: "POST",
         headers: {
-          "Content-Type": "application/octet-stream",
+          "Content-Type":
+            "application/octet-stream",
         },
         body: payload,
         cache: "no-store",
@@ -208,15 +221,21 @@ export async function collectBrowserEvidence(
     const url =
       `${diagnosticEndpoint}?test=${Date.now()}-${i}`
 
-    results.push(await testRequest(url))
+    results.push(
+      await testRequest(url),
+    )
   }
 
   const successfulRequests =
-    results.filter((result) => result.success)
+    results.filter(
+      (result) => result.success,
+    )
 
   const successfulLatencies =
     successfulRequests
-      .map((result) => result.latencyMs)
+      .map(
+        (result) => result.latencyMs,
+      )
       .filter(
         (latency): latency is number =>
           latency !== null,
@@ -224,16 +243,24 @@ export async function collectBrowserEvidence(
 
   const successRate =
     results.length > 0
-      ? (successfulRequests.length / results.length) *
+      ? (successfulRequests.length /
+          results.length) *
         100
       : 0
 
-  const failureRate = 100 - successRate
+  const failureRate =
+    100 - successRate
 
   const downloadSpeeds: number[] = []
   const uploadSpeeds: number[] = []
 
-  for (let i = 0; i < 2; i++) {
+  const speedTestCount = 3
+
+  for (
+    let i = 0;
+    i < speedTestCount;
+    i++
+  ) {
     const download =
       await measureDownloadSpeed(
         downloadEndpoint,
@@ -258,25 +285,36 @@ export async function collectBrowserEvidence(
       successfulRequests.length > 0,
 
     request_count: results.length,
+
     successful_request_count:
       successfulRequests.length,
+
     failed_request_count:
       results.length -
       successfulRequests.length,
 
-    request_success_rate: successRate,
-    request_failure_rate: failureRate,
+    request_success_rate:
+      successRate,
+
+    request_failure_rate:
+      failureRate,
 
     browser_latency_min_ms:
       successfulLatencies.length > 0
-        ? Math.min(...successfulLatencies)
+        ? Math.min(
+            ...successfulLatencies,
+          )
         : null,
 
     browser_latency_average_ms:
-      calculateAverage(successfulLatencies),
+      calculateAverage(
+        successfulLatencies,
+      ),
 
     browser_latency_median_ms:
-      calculateMedian(successfulLatencies),
+      calculateMedian(
+        successfulLatencies,
+      ),
 
     browser_latency_p95_ms:
       calculatePercentile(
@@ -286,16 +324,24 @@ export async function collectBrowserEvidence(
 
     browser_latency_max_ms:
       successfulLatencies.length > 0
-        ? Math.max(...successfulLatencies)
+        ? Math.max(
+            ...successfulLatencies,
+          )
         : null,
 
     browser_latency_jitter_ms:
-      calculateJitter(successfulLatencies),
+      calculateJitter(
+        successfulLatencies,
+      ),
 
     download_mbps:
-      calculateAverage(downloadSpeeds),
+      calculateAverage(
+        downloadSpeeds,
+      ),
 
     upload_mbps:
-      calculateAverage(uploadSpeeds),
+      calculateAverage(
+        uploadSpeeds,
+      ),
   }
 }
