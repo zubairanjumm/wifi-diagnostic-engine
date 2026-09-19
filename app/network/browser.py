@@ -13,6 +13,12 @@ def validate_browser_evidence(data: dict) -> dict:
         "https_reachable",
     ]
 
+    integer_fields = [
+        "request_count",
+        "successful_request_count",
+        "failed_request_count",
+    ]
+
     percentage_fields = [
         "request_success_rate",
         "request_failure_rate",
@@ -21,6 +27,8 @@ def validate_browser_evidence(data: dict) -> dict:
     latency_fields = [
         "browser_latency_min_ms",
         "browser_latency_average_ms",
+        "browser_latency_median_ms",
+        "browser_latency_p95_ms",
         "browser_latency_max_ms",
         "browser_latency_jitter_ms",
     ]
@@ -34,7 +42,27 @@ def validate_browser_evidence(data: dict) -> dict:
         value = data.get(field)
 
         if value is not None and not isinstance(value, bool):
-            raise ValueError(f"{field} must be a boolean or None.")
+            raise ValueError(
+                f"{field} must be a boolean or None."
+            )
+
+        validated[field] = value
+
+    for field in integer_fields:
+        value = data.get(field, 0)
+
+        if (
+            not isinstance(value, int)
+            or isinstance(value, bool)
+        ):
+            raise ValueError(
+                f"{field} must be an integer."
+            )
+
+        if value < 0:
+            raise ValueError(
+                f"{field} cannot be negative."
+            )
 
         validated[field] = value
 
@@ -42,11 +70,18 @@ def validate_browser_evidence(data: dict) -> dict:
         value = data.get(field)
 
         if value is not None:
-            if not isinstance(value, Real) or isinstance(value, bool):
-                raise ValueError(f"{field} must be a number or None.")
+            if (
+                not isinstance(value, Real)
+                or isinstance(value, bool)
+            ):
+                raise ValueError(
+                    f"{field} must be a number or None."
+                )
 
             if not 0 <= value <= 100:
-                raise ValueError(f"{field} must be between 0 and 100.")
+                raise ValueError(
+                    f"{field} must be between 0 and 100."
+                )
 
             value = float(value)
 
@@ -56,11 +91,18 @@ def validate_browser_evidence(data: dict) -> dict:
         value = data.get(field)
 
         if value is not None:
-            if not isinstance(value, Real) or isinstance(value, bool):
-                raise ValueError(f"{field} must be a number or None.")
+            if (
+                not isinstance(value, Real)
+                or isinstance(value, bool)
+            ):
+                raise ValueError(
+                    f"{field} must be a number or None."
+                )
 
             if value < 0:
-                raise ValueError(f"{field} cannot be negative.")
+                raise ValueError(
+                    f"{field} cannot be negative."
+                )
 
             value = float(value)
 
@@ -70,11 +112,18 @@ def validate_browser_evidence(data: dict) -> dict:
         value = data.get(field)
 
         if value is not None:
-            if not isinstance(value, Real) or isinstance(value, bool):
-                raise ValueError(f"{field} must be a number or None.")
+            if (
+                not isinstance(value, Real)
+                or isinstance(value, bool)
+            ):
+                raise ValueError(
+                    f"{field} must be a number or None."
+                )
 
             if value < 0:
-                raise ValueError(f"{field} cannot be negative.")
+                raise ValueError(
+                    f"{field} cannot be negative."
+                )
 
             value = float(value)
 

@@ -4,6 +4,21 @@ from pydantic import BaseModel, Field
 class BrowserEvidenceRequest(BaseModel):
     https_reachable: bool | None = None
 
+    request_count: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    successful_request_count: int = Field(
+        default=0,
+        ge=0,
+    )
+
+    failed_request_count: int = Field(
+        default=0,
+        ge=0,
+    )
+
     request_success_rate: float | None = Field(
         default=None,
         ge=0,
@@ -22,6 +37,16 @@ class BrowserEvidenceRequest(BaseModel):
     )
 
     browser_latency_average_ms: float | None = Field(
+        default=None,
+        ge=0,
+    )
+
+    browser_latency_median_ms: float | None = Field(
+        default=None,
+        ge=0,
+    )
+
+    browser_latency_p95_ms: float | None = Field(
         default=None,
         ge=0,
     )
@@ -45,6 +70,7 @@ class BrowserEvidenceRequest(BaseModel):
         default=None,
         ge=0,
     )
+
 
 class DiagnosticResponse(BaseModel):
     diagnosis: str

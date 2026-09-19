@@ -35,12 +35,14 @@ function App() {
     setResult(null)
 
     try {
-      const endpoint =
-        `${import.meta.env.VITE_API_URL}/api/diagnostic-test`
+      const apiUrl = import.meta.env.VITE_API_URL
 
       const browserEvidence =
-        await collectBrowserEvidence(endpoint)
-
+        await collectBrowserEvidence(
+          `${apiUrl}/api/diagnostic-test`,
+          `${apiUrl}/api/speed/download`,
+          `${apiUrl}/api/speed/upload`,
+        )
       setEvidence(browserEvidence)
 
       const diagnosticResult =
