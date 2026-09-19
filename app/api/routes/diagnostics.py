@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-
+import time
 from app.diagnostics.models import NetworkEvidence
 from app.diagnostics.rules import diagnose
 from app.schemas.diagnostic import (
@@ -37,4 +37,5 @@ def diagnose_browser_evidence(
 def diagnostic_test():
     return {
         "status": "ok",
+        "timestamp": time.time(),
     }
