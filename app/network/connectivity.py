@@ -2,6 +2,7 @@ import re
 import subprocess
 from dataclasses import dataclass
 
+CREATE_NO_WINDOW = getattr(subprocess, "CREATE_NO_WINDOW", 0)
 
 @dataclass
 class PingStats:
@@ -21,6 +22,7 @@ def get_default_gateway() -> str | None:
         text=True,
         encoding="utf-8",
         errors="ignore",
+        creationflags=CREATE_NO_WINDOW,
     )
 
     for line in result.stdout.splitlines():
@@ -44,6 +46,7 @@ def measure_ping(host: str, count: int = 10) -> PingStats | None:
         text=True,
         encoding="utf-8",
         errors="ignore",
+        creationflags=CREATE_NO_WINDOW,
     )
 
     output = result.stdout
