@@ -5,96 +5,98 @@ from dataclasses import dataclass
 
 @dataclass
 class PingStats:
-    """Statistics collected from a single ping session."""
-
     packet_loss_percent: float
-    min_ms: float | None
-    average_ms: float | None
-    max_ms: float | None
-    jitter_ms: float | None
+    min_ms: float
+    average_ms: float
+    max_ms: float
+    jitter_ms: float
 
 
 def get_default_gateway() -> str | None:
-    """Return the default gateway IP address."""
-    try:
-        result = subprocess.run(
-            ["ipconfig"],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="ignore",
-        )
+    """Return the default IPv4 gateway on Windows."""
 
-        for line in result.stdout.splitlines():
-            if "Default Gateway" in line:
-                gateway = line.split(":")[-1].strip()
+    result = subprocess.run(
+        ["ipconfig"],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="ignore",
+    )
 
-                if gateway:
-                    return gateway
+    for line in result.stdout.splitlines():
+        if "Default Gateway" not in line:
+            continue
 
-    except Exception:
-        return None
+        gateway = line.split(":", 1)[-1].strip()
+
+        if gateway:
+            return gateway
 
     return None
 
 
 def measure_ping(host: str, count: int = 10) -> PingStats | None:
-    """Run one ping session and collect packet loss and latency statistics."""
-    try:
-        result = subprocess.run(
-            ["ping", "-n", str(count), host],
-            capture_output=True,
-            text=True,
-            encoding="utf-8",
-            errors="ignore",
+    """Measure packet loss and latency using Windows ping."""
+
+    result = subprocess.run(
+        ["ping", "-n", str(count), host],
+        capture_output=True,
+        text=True,
+        encoding="utf-8",
+        errors="ignore",
+    )
+
+    output = result.stdout
+
+    loss_match = re.search(
+        r"(\d+(?:\.\d+)?)%\s*loss",
+        output,
+        re.IGNORECASE,
+    )
+
+    if not loss_match:
+        return None
+
+    packet_loss = float(loss_match.group(1))
+
+    latencies = [
+        float(value)
+        for value in re.findall(
+            r"time[=<](\d+(?:\.\d+)?)ms",
+            output,
+            re.IGNORECASE,
         )
+    ]
 
-        loss_match = re.search(
-            r"\((\d+)%\s*loss\)",
-            result.stdout,
-        )
-
-        if not loss_match:
-            return None
-
-        packet_loss = float(loss_match.group(1))
-
-        latencies = []
-
-        for line in result.stdout.splitlines():
-            match = re.search(
-                r"time[=<](\d+(?:\.\d+)?)ms",
-                line,
-            )
-
-            if match:
-                latencies.append(float(match.group(1)))
-
-        if latencies:
-            minimum = min(latencies)
-            maximum = max(latencies)
-            average = sum(latencies) / len(latencies)
-            jitter = maximum - minimum
-        else:
-            minimum = None
-            maximum = None
-            average = None
-            jitter = None
-
+    if not latencies:
         return PingStats(
             packet_loss_percent=packet_loss,
-            min_ms=minimum,
-            average_ms=average,
-            max_ms=maximum,
-            jitter_ms=jitter,
+            min_ms=0.0,
+            average_ms=0.0,
+            max_ms=0.0,
+            jitter_ms=0.0,
         )
 
-    except (ValueError, OSError):
-        return None
+    minimum = min(latencies)
+    average = sum(latencies) / len(latencies)
+    maximum = max(latencies)
+
+    # Keep the existing jitter definition because
+    # the current tests and diagnostic engine depend on it.
+    jitter = maximum - minimum
+
+    return PingStats(
+        packet_loss_percent=packet_loss,
+        min_ms=minimum,
+        average_ms=average,
+        max_ms=maximum,
+        jitter_ms=jitter,
+    )
 
 
 def test_router(gateway: str | None) -> bool:
     """Check whether the local router is reachable."""
+
     if not gateway:
         return False
 
@@ -103,21 +105,30 @@ def test_router(gateway: str | None) -> bool:
     return stats is not None and stats.packet_loss_percent < 100
 
 
-def test_internet() -> bool:
-    """Check whether an external internet target is reachable."""
-    stats = measure_ping("8.8.8.8", count=4)
+def test_internet(host: str = "8.8.8.8") -> bool:
+    """Check whether an external internet host is reachable."""
+
+    stats = measure_ping(host, count=4)
 
     return stats is not None and stats.packet_loss_percent < 100
 
 
-def measure_router_ping(gateway: str | None) -> PingStats | None:
-    """Measure the connection between the device and local router."""
+def measure_router_ping(
+    gateway: str | None,
+    count: int = 10,
+) -> PingStats | None:
+    """Measure latency between the computer and router."""
+
     if not gateway:
         return None
 
-    return measure_ping(gateway)
+    return measure_ping(gateway, count=count)
 
 
-def measure_internet_ping() -> PingStats | None:
-    """Measure the connection to an external internet target."""
-    return measure_ping("8.8.8.8")
+def measure_internet_ping(
+    host: str = "8.8.8.8",
+    count: int = 10,
+) -> PingStats | None:
+    """Measure latency between the computer and internet."""
+
+    return measure_ping(host, count=count)
