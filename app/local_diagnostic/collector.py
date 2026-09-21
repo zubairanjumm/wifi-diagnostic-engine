@@ -3,6 +3,7 @@ from typing import Callable
 
 from app.diagnostics.models import NetworkEvidence
 from app.diagnostics.rules import diagnose
+from app.diagnostics.recommendations import Recommendation, recommend
 from app.network.connectivity import (
     get_default_gateway,
     measure_internet_ping,
@@ -22,7 +23,7 @@ class LocalDiagnosticResult:
     gateway: str | None
     evidence: NetworkEvidence
     diagnosis: str
-
+    recommendation : Recommendation
 
 def average(values: list[float]) -> float | None:
     if not values:
@@ -182,10 +183,14 @@ def collect_local_diagnostic(
         internet_jitter_ms=average(internet_jitters),
         internet_packet_loss_percent=average(internet_packet_losses),
     )
-
-    progress("analysis", "Running the diagnostic engine...")
-
     diagnosis = diagnose(evidence)
+
+    progress("analysis", "Building the recommended next step...")
+
+    recommendation = recommend(
+        diagnosis,
+        evidence,
+    )
 
     progress("complete", "Diagnosis complete.")
 
@@ -193,4 +198,5 @@ def collect_local_diagnostic(
         gateway=gateway,
         evidence=evidence,
         diagnosis=diagnosis,
+        recommendation=recommendation,
     )

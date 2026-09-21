@@ -264,3 +264,7 @@ def test_local_collector_builds_result():
     assert result.evidence.internet_reachable is False
     assert result.evidence.dns_working is False
     assert result.diagnosis == "local_network_problem"
+
+    assert result.recommendation is not None
+    assert result.recommendation.title
+    assert result.recommendation.steps
