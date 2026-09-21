@@ -1,7 +1,7 @@
 import threading
 import tkinter as tk
-from tkinter import messagebox
 
+from app.diagnostics.verification import verify_improvement
 from app.local_diagnostic.collector import collect_local_diagnostic
 
 
@@ -18,6 +18,10 @@ class WiFiDiagnosticGUI:
         self.normal_font = ("Segoe UI", 11)
         self.small_font = ("Segoe UI", 9)
 
+        # Stores the previous diagnostic so we can compare
+        # it with the next diagnostic run.
+        self.previous_result = None
+
         self.show_start_screen()
 
     def clear_screen(self):
@@ -27,7 +31,10 @@ class WiFiDiagnosticGUI:
     def show_start_screen(self):
         self.clear_screen()
 
-        container = tk.Frame(self.root, bg="white")
+        container = tk.Frame(
+            self.root,
+            bg="white",
+        )
         container.pack(
             fill="both",
             expand=True,
@@ -71,7 +78,10 @@ class WiFiDiagnosticGUI:
 
         tk.Label(
             container,
-            text="The diagnostic checks your local network, internet path, and DNS.",
+            text=(
+                "The diagnostic checks your local network, "
+                "internet path, and DNS."
+            ),
             font=self.small_font,
             bg="white",
             fg="#777777",
@@ -182,6 +192,18 @@ class WiFiDiagnosticGUI:
             )
 
     def show_result_screen(self, result):
+        # Compare this diagnostic with the previous one.
+        verification = None
+
+        if self.previous_result is not None:
+            verification = verify_improvement(
+                self.previous_result.evidence,
+                result.evidence,
+            )
+
+        # Store the current result for the next Run Again.
+        self.previous_result = result
+
         self.clear_screen()
 
         container = tk.Frame(
@@ -195,7 +217,9 @@ class WiFiDiagnosticGUI:
             pady=45,
         )
 
-        explanation = self.get_explanation(result.diagnosis)
+        explanation = self.get_explanation(
+            result.diagnosis,
+        )
 
         tk.Label(
             container,
@@ -219,8 +243,36 @@ class WiFiDiagnosticGUI:
             justify="left",
         ).pack(
             anchor="w",
-            pady=(12, 25),
+            pady=(12, 20),
         )
+
+        # Show verification only from the second diagnostic onward.
+        if verification is not None:
+            tk.Label(
+                container,
+                text=verification.title,
+                font=self.heading_font,
+                bg="white",
+                fg="black",
+                wraplength=620,
+                justify="left",
+            ).pack(
+                anchor="w",
+                pady=(0, 4),
+            )
+
+            tk.Label(
+                container,
+                text=verification.message,
+                font=self.normal_font,
+                bg="white",
+                fg="#555555",
+                wraplength=620,
+                justify="left",
+            ).pack(
+                anchor="w",
+                pady=(0, 15),
+            )
 
         tk.Label(
             container,
@@ -233,7 +285,6 @@ class WiFiDiagnosticGUI:
             pady=(5, 8),
         )
 
-        # The recommendation now comes from the diagnostic evidence.
         recommendation = result.recommendation
 
         tk.Label(
