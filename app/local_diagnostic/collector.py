@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Callable
 
-from app.diagnostics.models import NetworkEvidence,DiagnosticFinding
-from app.diagnostics.rules import diagnose,build_diagnostic_finding
+from app.diagnostics.models import DiagnosticFinding, NetworkEvidence
+from app.diagnostics.rules import diagnose, build_diagnostic_finding
 from app.diagnostics.recommendations import Recommendation, recommend
 from app.local_diagnostic.windows_wifi import collect_windows_wifi_evidence
 from app.network.connectivity import (
@@ -24,7 +24,7 @@ class LocalDiagnosticResult:
     gateway: str | None
     evidence: NetworkEvidence
     diagnosis: str
-    finding : DiagnosticFinding
+    finding: DiagnosticFinding
     recommendation: Recommendation
 
 
@@ -38,17 +38,15 @@ def average(values: list[float]) -> float | None:
 def collect_local_diagnostic(
     progress_callback: ProgressCallback | None = None,
 ) -> LocalDiagnosticResult:
-    """Collect repeated local network evidence and diagnose it."""
 
     def progress(step: str, message: str) -> None:
         if progress_callback:
-            progress(step, message)
+            progress_callback(step, message)
 
     progress("setup", "Finding your local router...")
 
     gateway = get_default_gateway()
 
-    # Collect lightweight Windows Wi-Fi/interface context.
     wifi_evidence = collect_windows_wifi_evidence()
 
     router_samples = []
@@ -57,6 +55,7 @@ def collect_local_diagnostic(
     dns_results = []
 
     for sample_number in range(1, SAMPLE_COUNT + 1):
+
         progress(
             "router",
             f"Testing router connection ({sample_number}/{SAMPLE_COUNT})...",
@@ -95,7 +94,10 @@ def collect_local_diagnostic(
 
         dns_results.append(dns_working)
 
-    progress("analysis", "Combining the collected network evidence...")
+    progress(
+        "analysis",
+        "Combining the collected network evidence...",
+    )
 
     router_packet_losses = [
         sample.packet_loss_percent
@@ -158,7 +160,11 @@ def collect_local_diagnostic(
             and average(internet_packet_losses) is not None
             and average(internet_packet_losses) < 100
         ),
-        dns_working=all(dns_results) if dns_results else False,
+        dns_working=(
+            all(dns_results)
+            if dns_results
+            else False
+        ),
         dns_latency_ms=average(dns_samples),
 
         router_latency_min_ms=(
@@ -187,7 +193,9 @@ def collect_local_diagnostic(
             else None
         ),
         internet_jitter_ms=average(internet_jitters),
-        internet_packet_loss_percent=average(internet_packet_losses),
+        internet_packet_loss_percent=average(
+            internet_packet_losses
+        ),
 
         wifi_connected=wifi_evidence.connected,
         wifi_signal_percent=wifi_evidence.signal_percent,
@@ -198,21 +206,28 @@ def collect_local_diagnostic(
     )
 
     diagnosis = diagnose(evidence)
-    finding = build_diagnostic_finding(evidence)
 
-    progress("analysis", "Building the recommended next step...")
+    progress(
+        "analysis",
+        "Building the recommended next step...",
+    )
 
     recommendation = recommend(
         diagnosis,
         evidence,
     )
 
-    progress("complete", "Diagnosis complete.")
+    finding = build_diagnostic_finding(evidence)
+
+    progress(
+        "complete",
+        "Diagnosis complete.",
+    )
 
     return LocalDiagnosticResult(
         gateway=gateway,
         evidence=evidence,
         diagnosis=diagnosis,
-        finding = finding,
+        finding=finding,
         recommendation=recommendation,
     )

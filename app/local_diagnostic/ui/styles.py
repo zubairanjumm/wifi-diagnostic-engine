@@ -141,4 +141,30 @@ def application_stylesheet() -> str:
         background: #f0f1f3;
         color: {TEXT};
     }}
+
+        QLabel#CardSectionTitle {{
+        font-size: 14px;
+        font-weight: 700;
+        color: {TEXT};
+    }}
+
+    QLabel#EvidenceValue {{
+        font-size: 13px;
+        font-weight: 600;
+        color: {TEXT};
+    }}
+
+    QLabel#EvidenceFinding {{
+        font-size: 19px;
+        font-weight: 700;
+        color: {TEXT};
+    }}
+
+    QLabel#ReportSuccess {{
+        background: #f0f1f3;
+        border: 1px solid {BORDER};
+        border-radius: 8px;
+        padding: 10px 14px;
+        color: {TEXT};
+    }}
     """

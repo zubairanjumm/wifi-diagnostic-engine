@@ -1,6 +1,6 @@
 import time
 
-from PySide6.QtCore import Signal
+from PySide6.QtCore import Signal, QTimer
 from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -25,6 +25,11 @@ class MonitorPage(QWidget):
 
         self.monitor = None
         self.started_at = None
+
+        # Updates the elapsed-time display every second.
+        self.timer = QTimer(self)
+        self.timer.setInterval(1000)
+        self.timer.timeout.connect(self.update_duration)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(35, 30, 35, 30)
@@ -56,9 +61,13 @@ class MonitorPage(QWidget):
         self.duration = QLabel("Duration: 0s")
         self.duration.setObjectName("PageSubtitle")
 
+        self.last_update = QLabel("Last measurement: --")
+        self.last_update.setObjectName("PageSubtitle")
+
         status_layout.addWidget(self.status)
         status_layout.addWidget(self.run_number)
         status_layout.addWidget(self.duration)
+        status_layout.addWidget(self.last_update)
 
         layout.addWidget(status_card)
 
@@ -131,15 +140,28 @@ class MonitorPage(QWidget):
         self.start_button.setEnabled(False)
         self.stop_button.setEnabled(True)
 
+        self.timer.start()
         self.monitor.start()
 
     def stop_monitoring(self):
         if self.monitor:
             self.monitor.stop()
 
+        self.timer.stop()
+
         self.status.setText("Monitoring stopped")
         self.start_button.setEnabled(True)
         self.stop_button.setEnabled(False)
+
+    def update_duration(self):
+        if not self.started_at:
+            return
+
+        elapsed = int(time.time() - self.started_at)
+
+        self.duration.setText(
+            f"Duration: {elapsed}s"
+        )
 
     def handle_result(self, monitor_run: MonitorRun):
         self.run_number.setText(
@@ -165,14 +187,12 @@ class MonitorPage(QWidget):
         )
 
         self.diagnosis.value_label.setText(
-            monitor_run.result.diagnosis.replace("_", " ").title()
+            monitor_run.result.finding.title
         )
 
-        if self.started_at:
-            elapsed = int(time.time() - self.started_at)
-            self.duration.setText(
-                f"Duration: {elapsed}s"
-            )
+        self.last_update.setText(
+            f"Last measurement: {time.strftime('%H:%M:%S')}"
+        )
 
         self.result_received.emit(monitor_run)
 

@@ -5,7 +5,6 @@ from PySide6.QtWidgets import (
     QLabel,
     QPushButton,
     QProgressBar,
-    QScrollArea,
     QVBoxLayout,
     QWidget,
 )
@@ -37,6 +36,7 @@ class DiagnosticPage(QWidget):
 
         self.thread = None
         self.worker = None
+        self.current_progress = 0
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(35, 30, 35, 30)
@@ -91,8 +91,16 @@ class DiagnosticPage(QWidget):
         layout.addStretch()
 
     def start(self):
+        if self.thread is not None:
+            return
+
         self.run_button.setEnabled(False)
-        self.status.setText("Running...")
+        self.status.setText("Starting diagnostic...")
+        self.details_label.setText(
+            "Collecting network evidence..."
+        )
+
+        self.current_progress = 0
         self.progress.setValue(0)
 
         self.thread = QThread()
@@ -100,7 +108,9 @@ class DiagnosticPage(QWidget):
 
         self.worker.moveToThread(self.thread)
 
-        self.thread.started.connect(self.worker.run)
+        self.thread.started.connect(
+            self.worker.run
+        )
 
         self.worker.progress.connect(
             self.update_progress
@@ -123,7 +133,7 @@ class DiagnosticPage(QWidget):
         )
 
         self.thread.finished.connect(
-            self.thread.deleteLater
+            self.cleanup_thread
         )
 
         self.thread.start()
@@ -139,17 +149,30 @@ class DiagnosticPage(QWidget):
             "complete": 100,
         }
 
+        new_progress = values.get(
+            step,
+            self.current_progress,
+        )
+
+        self.current_progress = max(
+            self.current_progress,
+            new_progress,
+        )
+
         self.progress.setValue(
-            values.get(step, 0)
+            self.current_progress
         )
 
         self.status.setText(message)
 
     @Slot(object)
     def on_finished(self, result):
-        self.run_button.setEnabled(True)
+        self.current_progress = 100
         self.progress.setValue(100)
-        self.status.setText("Diagnostic complete")
+
+        self.status.setText(
+            "Diagnostic complete"
+        )
 
         self.details_label.setText(
             result.recommendation.title
@@ -159,6 +182,29 @@ class DiagnosticPage(QWidget):
 
     @Slot(str)
     def on_failed(self, message):
+        self.status.setText(
+            "Diagnostic failed"
+        )
+
+        self.details_label.setText(
+            message
+        )
+
+    @Slot()
+    def cleanup_thread(self):
+        thread = self.thread
+
+        self.thread = None
+        self.worker = None
+
+        if thread is not None:
+            thread.deleteLater()
+
         self.run_button.setEnabled(True)
-        self.status.setText("Diagnostic failed")
-        self.details_label.setText(message)
+
+    def closeEvent(self, event):
+        if self.thread is not None:
+            self.thread.quit()
+            self.thread.wait()
+
+        event.accept()
