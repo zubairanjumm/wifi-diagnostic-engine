@@ -1,9 +1,10 @@
 from dataclasses import dataclass
 from typing import Callable
 
-from app.diagnostics.models import NetworkEvidence
-from app.diagnostics.rules import diagnose
+from app.diagnostics.models import NetworkEvidence,DiagnosticFinding
+from app.diagnostics.rules import diagnose,build_diagnostic_finding
 from app.diagnostics.recommendations import Recommendation, recommend
+from app.local_diagnostic.windows_wifi import collect_windows_wifi_evidence
 from app.network.connectivity import (
     get_default_gateway,
     measure_internet_ping,
@@ -23,7 +24,9 @@ class LocalDiagnosticResult:
     gateway: str | None
     evidence: NetworkEvidence
     diagnosis: str
-    recommendation : Recommendation
+    finding : DiagnosticFinding
+    recommendation: Recommendation
+
 
 def average(values: list[float]) -> float | None:
     if not values:
@@ -39,11 +42,14 @@ def collect_local_diagnostic(
 
     def progress(step: str, message: str) -> None:
         if progress_callback:
-            progress_callback(step, message)
+            progress(step, message)
 
     progress("setup", "Finding your local router...")
 
     gateway = get_default_gateway()
+
+    # Collect lightweight Windows Wi-Fi/interface context.
+    wifi_evidence = collect_windows_wifi_evidence()
 
     router_samples = []
     internet_samples = []
@@ -182,8 +188,17 @@ def collect_local_diagnostic(
         ),
         internet_jitter_ms=average(internet_jitters),
         internet_packet_loss_percent=average(internet_packet_losses),
+
+        wifi_connected=wifi_evidence.connected,
+        wifi_signal_percent=wifi_evidence.signal_percent,
+        wifi_receive_rate_mbps=wifi_evidence.receive_rate_mbps,
+        wifi_transmit_rate_mbps=wifi_evidence.transmit_rate_mbps,
+        wifi_channel=wifi_evidence.channel,
+        wifi_radio_type=wifi_evidence.radio_type,
     )
+
     diagnosis = diagnose(evidence)
+    finding = build_diagnostic_finding(evidence)
 
     progress("analysis", "Building the recommended next step...")
 
@@ -198,5 +213,6 @@ def collect_local_diagnostic(
         gateway=gateway,
         evidence=evidence,
         diagnosis=diagnosis,
+        finding = finding,
         recommendation=recommendation,
     )

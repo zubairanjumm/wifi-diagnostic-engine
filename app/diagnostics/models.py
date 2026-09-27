@@ -1,6 +1,16 @@
 from dataclasses import dataclass
 
 
+@dataclass(frozen=True)
+class DiagnosticFinding:
+    code: str
+    title: str
+    summary: str
+    affected_layer: str
+    confidence: str
+    evidence: tuple[str, ...]
+
+
 @dataclass
 class NetworkEvidence:
     router_reachable: bool | None = None
@@ -20,6 +30,14 @@ class NetworkEvidence:
 
     router_packet_loss_percent: float | None = None
     internet_packet_loss_percent: float | None = None
+
+    # Windows Wi-Fi interface evidence
+    wifi_connected: bool | None = None
+    wifi_signal_percent: float | None = None
+    wifi_receive_rate_mbps: float | None = None
+    wifi_transmit_rate_mbps: float | None = None
+    wifi_channel: int | None = None
+    wifi_radio_type: str | None = None
 
     # Browser-collected evidence
     https_reachable: bool | None = None
