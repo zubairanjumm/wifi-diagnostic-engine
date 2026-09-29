@@ -54,6 +54,8 @@ def test_router_packet_loss():
         internet_reachable=True,
         dns_working=True,
         router_packet_loss_percent=10.0,
+        router_packet_loss_samples=(10.0, 10.0, 10.0),
+        router_loss_affected_samples=3,
         router_latency_average_ms=30.0,
         router_jitter_ms=20.0,
         internet_packet_loss_percent=0.0,
@@ -86,6 +88,8 @@ def test_internet_packet_loss():
         router_latency_average_ms=10.0,
         router_jitter_ms=5.0,
         internet_packet_loss_percent=10.0,
+        internet_packet_loss_samples=(10.0, 10.0, 10.0),
+        internet_loss_affected_samples=3,
         internet_latency_average_ms=30.0,
         internet_jitter_ms=10.0,
     )
@@ -112,6 +116,8 @@ def test_dns_failure_takes_priority_over_internet_packet_loss():
         dns_working=False,
         router_packet_loss_percent=0.0,
         internet_packet_loss_percent=10.0,
+        internet_packet_loss_samples=(10.0, 10.0, 10.0),
+        internet_loss_affected_samples=3,
     )
 
     assert diagnose(evidence) == "dns_problem"
@@ -193,7 +199,11 @@ def test_router_problem_takes_priority_over_internet_problem():
         internet_reachable=True,
         dns_working=True,
         router_packet_loss_percent=20.0,
+        router_packet_loss_samples=(20.0, 20.0, 20.0),
+        router_loss_affected_samples=3,
         internet_packet_loss_percent=20.0,
+        internet_packet_loss_samples=(20.0, 20.0, 20.0),
+        internet_loss_affected_samples=3,
     )
 
     assert diagnose(evidence) == "local_network_instability"
@@ -264,10 +274,10 @@ def test_local_collector_builds_result():
     assert result.evidence.internet_reachable is False
     assert result.evidence.dns_working is False
     assert result.diagnosis == "local_network_problem"
-
     assert result.recommendation is not None
     assert result.recommendation.title
     assert result.recommendation.steps
+
 
 def test_weak_wifi_signal_alone_does_not_create_local_problem():
     evidence = NetworkEvidence(
@@ -354,6 +364,7 @@ def test_wifi_evidence_is_preserved_by_collector():
     assert result.evidence.wifi_channel == 36
     assert result.evidence.wifi_radio_type == "802.11ac"
 
+
 def test_diagnostic_finding_explains_internet_path_instability():
     evidence = NetworkEvidence(
         router_reachable=True,
@@ -363,6 +374,8 @@ def test_diagnostic_finding_explains_internet_path_instability():
         router_latency_average_ms=8.0,
         router_jitter_ms=2.0,
         internet_packet_loss_percent=12.0,
+        internet_packet_loss_samples=(12.0, 12.0, 12.0),
+        internet_loss_affected_samples=3,
         internet_latency_average_ms=40.0,
         internet_jitter_ms=8.0,
     )
@@ -384,7 +397,9 @@ def test_diagnostic_finding_explains_local_instability():
         dns_working=True,
         wifi_connected=True,
         wifi_signal_percent=35.0,
-        router_packet_loss_percent=8.0,
+        router_packet_loss_percent=10.0,
+        router_packet_loss_samples=(10.0, 10.0, 10.0),
+        router_loss_affected_samples=3,
         router_latency_average_ms=80.0,
         router_jitter_ms=30.0,
         internet_packet_loss_percent=0.0,

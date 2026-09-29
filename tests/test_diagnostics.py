@@ -18,6 +18,8 @@ def test_local_network_instability():
         internet_reachable=True,
         dns_working=True,
         router_packet_loss_percent=10.0,
+        router_packet_loss_samples=(10.0, 10.0, 10.0),
+        router_loss_affected_samples=3,
     )
 
     assert diagnose(evidence) == "local_network_instability"
@@ -49,6 +51,8 @@ def test_internet_path_instability():
         internet_reachable=True,
         dns_working=True,
         internet_packet_loss_percent=10.0,
+        internet_packet_loss_samples=(10.0, 10.0, 10.0),
+        internet_loss_affected_samples=3,
     )
 
     assert diagnose(evidence) == "internet_path_instability"
@@ -112,6 +116,8 @@ def test_dns_problem_takes_priority_over_internet_packet_loss():
         internet_reachable=True,
         dns_working=False,
         internet_packet_loss_percent=10.0,
+        internet_packet_loss_samples=(10.0, 10.0, 10.0),
+        internet_loss_affected_samples=3,
     )
 
     assert diagnose(evidence) == "dns_problem"
@@ -123,6 +129,8 @@ def test_packet_loss_takes_priority_over_high_latency():
         internet_reachable=True,
         dns_working=True,
         internet_packet_loss_percent=10.0,
+        internet_packet_loss_samples=(10.0, 10.0, 10.0),
+        internet_loss_affected_samples=3,
         internet_latency_average_ms=200.0,
     )
 
@@ -134,6 +142,8 @@ def test_router_packet_loss_below_threshold():
         router_reachable=True,
         internet_reachable=True,
         router_packet_loss_percent=4.9,
+        router_packet_loss_samples=(4.9, 4.9, 4.9),
+        router_loss_affected_samples=3,
     )
 
     assert diagnose(evidence) == "no_obvious_problem"
@@ -143,7 +153,9 @@ def test_router_packet_loss_at_threshold():
     evidence = NetworkEvidence(
         router_reachable=True,
         internet_reachable=True,
-        router_packet_loss_percent=5.0,
+        router_packet_loss_percent=10.0,
+        router_packet_loss_samples=(10.0, 10.0, 10.0),
+        router_loss_affected_samples=3,
     )
 
     assert diagnose(evidence) == "local_network_instability"
@@ -177,6 +189,8 @@ def test_local_packet_loss_with_stable_internet_path():
         internet_reachable=True,
         dns_working=True,
         router_packet_loss_percent=10.0,
+        router_packet_loss_samples=(10.0, 10.0, 10.0),
+        router_loss_affected_samples=3,
         internet_packet_loss_percent=0.0,
     )
 
@@ -189,6 +203,8 @@ def test_internet_packet_loss_with_stable_router():
         internet_reachable=True,
         router_packet_loss_percent=0.0,
         internet_packet_loss_percent=10.0,
+        internet_packet_loss_samples=(10.0, 10.0, 10.0),
+        internet_loss_affected_samples=3,
     )
 
     assert diagnose(evidence) == "internet_path_instability"

@@ -2,7 +2,6 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QFrame,
     QGridLayout,
-    QHBoxLayout,
     QLabel,
     QPushButton,
     QVBoxLayout,
@@ -10,14 +9,15 @@ from PySide6.QtWidgets import (
 )
 
 
-class MetricCard(QFrame):
+class StatusCard(QFrame):
     def __init__(self, title: str):
         super().__init__()
+
         self.setObjectName("Card")
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(18, 16, 18, 16)
-        layout.setSpacing(5)
+        layout.setSpacing(6)
 
         title_label = QLabel(title)
         title_label.setObjectName("CardTitle")
@@ -47,18 +47,23 @@ class DashboardPage(QWidget):
         title.setObjectName("PageTitle")
 
         subtitle = QLabel(
-            "Understand the condition of your home network."
+            "A simple view of what we found on your connection."
         )
         subtitle.setObjectName("PageSubtitle")
 
         layout.addWidget(title)
         layout.addWidget(subtitle)
 
+        # -----------------------------------------------------
+        # Main status
+        # -----------------------------------------------------
+
         health_card = QFrame()
         health_card.setObjectName("Card")
 
         health_layout = QVBoxLayout(health_card)
-        health_layout.setContentsMargins(24, 20, 24, 20)
+        health_layout.setContentsMargins(24, 22, 24, 22)
+        health_layout.setSpacing(8)
 
         health_title = QLabel("Current status")
         health_title.setObjectName("CardTitle")
@@ -67,9 +72,10 @@ class DashboardPage(QWidget):
         self.health_status.setObjectName("PageTitle")
 
         self.health_message = QLabel(
-            "Run a diagnostic to measure your connection."
+            "Run a diagnostic to check your connection."
         )
         self.health_message.setObjectName("PageSubtitle")
+        self.health_message.setWordWrap(True)
 
         health_layout.addWidget(health_title)
         health_layout.addWidget(self.health_status)
@@ -77,30 +83,33 @@ class DashboardPage(QWidget):
 
         layout.addWidget(health_card)
 
+        # -----------------------------------------------------
+        # Simple status cards
+        # -----------------------------------------------------
+
         grid = QGridLayout()
         grid.setSpacing(14)
 
-        self.router_card = MetricCard("Router")
-        self.internet_card = MetricCard("Internet")
-        self.dns_card = MetricCard("DNS")
-        self.latency_card = MetricCard("Latency")
+        self.wifi_card = StatusCard("Wi-Fi")
+        self.internet_card = StatusCard("Internet")
+        self.websites_card = StatusCard("Websites")
+        self.consistency_card = StatusCard("Connection")
 
-        grid.addWidget(self.router_card, 0, 0)
+        grid.addWidget(self.wifi_card, 0, 0)
         grid.addWidget(self.internet_card, 0, 1)
-        grid.addWidget(self.dns_card, 1, 0)
-        grid.addWidget(self.latency_card, 1, 1)
+        grid.addWidget(self.websites_card, 1, 0)
+        grid.addWidget(self.consistency_card, 1, 1)
 
         layout.addLayout(grid)
 
-        bottom = QHBoxLayout()
+        # -----------------------------------------------------
+        # Diagnostic button
+        # -----------------------------------------------------
 
         self.run_button = QPushButton("Run Diagnostic")
         self.run_button.clicked.connect(self.run_requested.emit)
 
-        bottom.addWidget(self.run_button)
-        bottom.addStretch()
-
-        layout.addLayout(bottom)
+        layout.addWidget(self.run_button)
         layout.addStretch()
 
     def update_result(self, result):
@@ -108,73 +117,97 @@ class DashboardPage(QWidget):
         evidence = result.evidence
 
         diagnosis_titles = {
-            "no_obvious_problem": "Stable",
-            "local_network_problem": "Local network problem",
-            "local_network_instability": "Local instability",
-            "internet_connection_problem": "Internet unavailable",
-            "internet_path_instability": "Internet instability",
-            "dns_problem": "DNS problem",
-            "high_latency": "High latency",
-            "high_jitter": "High jitter",
-            "browser_connection_instability": "Connection instability",
+            "no_obvious_problem": "Connection looks healthy",
+            "local_network_problem": "Problem reaching your router",
+            "local_network_instability": "Local connection is unstable",
+            "internet_connection_problem": "Internet connection is unavailable",
+            "internet_path_instability": "Internet connection is unstable",
+            "dns_problem": "Website name lookup is failing",
+            "high_latency": "Connection is responding slowly",
+            "high_jitter": "Connection is inconsistent",
+            "browser_connection_instability": "Some connection requests are failing",
         }
 
         self.health_status.setText(
             diagnosis_titles.get(
                 diagnosis,
-                "Unusual network condition",
+                "Unusual connection condition",
             )
         )
 
         self.health_message.setText(
-            result.recommendation.title
+            result.finding.summary
         )
 
-        self.router_card.value.setText(
-            "OK" if evidence.router_reachable else "Problem"
-        )
+        # -----------------------------------------------------
+        # Wi-Fi
+        # -----------------------------------------------------
 
-        self.router_card.detail.setText(
-            self._metric(
-                evidence.router_latency_average_ms,
-                "ms",
+        if evidence.wifi_connected is True:
+            self.wifi_card.value.setText("Connected")
+            self.wifi_card.detail.setText("Your device is connected to Wi-Fi.")
+        elif evidence.wifi_connected is False:
+            self.wifi_card.value.setText("Not connected")
+            self.wifi_card.detail.setText("Your device is not connected to Wi-Fi.")
+        else:
+            self.wifi_card.value.setText("Unknown")
+            self.wifi_card.detail.setText("Wi-Fi status could not be checked.")
+
+        # -----------------------------------------------------
+        # Internet
+        # -----------------------------------------------------
+
+        if evidence.internet_reachable is True:
+            self.internet_card.value.setText("Available")
+            self.internet_card.detail.setText(
+                "Your device can reach the internet."
             )
-        )
-
-        self.internet_card.value.setText(
-            "OK" if evidence.internet_reachable else "Problem"
-        )
-
-        self.internet_card.detail.setText(
-            self._metric(
-                evidence.internet_latency_average_ms,
-                "ms",
+        elif evidence.internet_reachable is False:
+            self.internet_card.value.setText("Unavailable")
+            self.internet_card.detail.setText(
+                "Your device could not reach the internet."
             )
-        )
-
-        self.dns_card.value.setText(
-            "Working" if evidence.dns_working else "Problem"
-        )
-
-        self.dns_card.detail.setText("DNS resolution")
-
-        self.latency_card.value.setText(
-            self._metric(
-                evidence.internet_latency_average_ms,
-                "ms",
+        else:
+            self.internet_card.value.setText("Unknown")
+            self.internet_card.detail.setText(
+                "Internet availability could not be confirmed."
             )
-        )
 
-        self.latency_card.detail.setText(
-            self._metric(
-                evidence.internet_jitter_ms,
-                "jitter",
+        # -----------------------------------------------------
+        # Websites / DNS
+        # -----------------------------------------------------
+
+        if evidence.dns_working is True:
+            self.websites_card.value.setText("Working")
+            self.websites_card.detail.setText(
+                "Website name lookup is working."
             )
-        )
+        elif evidence.dns_working is False:
+            self.websites_card.value.setText("Problem")
+            self.websites_card.detail.setText(
+                "Website name lookup is failing."
+            )
+        else:
+            self.websites_card.value.setText("Unknown")
+            self.websites_card.detail.setText(
+                "Website lookup could not be confirmed."
+            )
 
-    @staticmethod
-    def _metric(value, suffix):
-        if value is None:
-            return "--"
+        # -----------------------------------------------------
+        # Overall consistency
+        # -----------------------------------------------------
 
-        return f"{value:.1f} {suffix}"
+        stable_diagnoses = {
+            "no_obvious_problem",
+        }
+
+        if diagnosis in stable_diagnoses:
+            self.consistency_card.value.setText("Consistent")
+            self.consistency_card.detail.setText(
+                "No repeated instability was detected."
+            )
+        else:
+            self.consistency_card.value.setText("Needs attention")
+            self.consistency_card.detail.setText(
+                "The diagnostic found evidence worth investigating."
+            )

@@ -31,7 +31,25 @@ class NetworkEvidence:
     router_packet_loss_percent: float | None = None
     internet_packet_loss_percent: float | None = None
 
-    # Windows Wi-Fi interface evidence
+    # Packet loss from each diagnostic round.
+    # Keeping these values lets the rules distinguish an isolated
+    # loss event from repeated packet loss.
+    router_packet_loss_samples: tuple[float, ...] = ()
+    internet_packet_loss_samples: tuple[float, ...] = ()
+
+    # Number of diagnostic rounds that experienced any packet loss.
+    router_loss_affected_samples: int = 0
+    internet_loss_affected_samples: int = 0
+
+    # Individual latency measurements collected across all rounds.
+    router_sample_count: int = 0
+    router_high_latency_samples: int = 0
+    router_high_latency_rate_percent: float | None = None
+
+    internet_sample_count: int = 0
+    internet_high_latency_samples: int = 0
+    internet_high_latency_rate_percent: float | None = None
+
     wifi_connected: bool | None = None
     wifi_signal_percent: float | None = None
     wifi_receive_rate_mbps: float | None = None
@@ -39,7 +57,6 @@ class NetworkEvidence:
     wifi_channel: int | None = None
     wifi_radio_type: str | None = None
 
-    # Browser-collected evidence
     https_reachable: bool | None = None
 
     request_count: int = 0

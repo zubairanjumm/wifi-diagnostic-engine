@@ -40,17 +40,13 @@ class EvidencePage(QWidget):
             "Run a diagnostic to view network evidence."
         )
         self.message.setObjectName("PageSubtitle")
-
         outer.addWidget(self.message)
 
         self.scroll = QScrollArea()
         self.scroll.setWidgetResizable(True)
 
         self.content = QWidget()
-
-        self.content_layout = QVBoxLayout(
-            self.content
-        )
+        self.content_layout = QVBoxLayout(self.content)
         self.content_layout.setSpacing(14)
         self.content_layout.setContentsMargins(
             0,
@@ -60,7 +56,6 @@ class EvidencePage(QWidget):
         )
 
         self.scroll.setWidget(self.content)
-
         outer.addWidget(self.scroll)
 
         buttons = QHBoxLayout()
@@ -72,7 +67,6 @@ class EvidencePage(QWidget):
             "SecondaryButton"
         )
         self.report_button.setEnabled(False)
-
         self.report_button.clicked.connect(
             self.generate_report
         )
@@ -138,56 +132,86 @@ class EvidencePage(QWidget):
             ],
         )
 
+        local_network_rows = [
+            (
+                "Router latency",
+                self._metric(
+                    evidence.router_latency_average_ms,
+                    "ms",
+                ),
+            ),
+            (
+                "Router jitter",
+                self._metric(
+                    evidence.router_jitter_ms,
+                    "ms",
+                ),
+            ),
+            (
+                "Router packet loss",
+                self._percent(
+                    evidence.router_packet_loss_percent,
+                ),
+            ),
+        ]
+
+        if evidence.router_packet_loss_samples:
+            local_network_rows.append(
+                (
+                    "Loss affected test rounds",
+                    self._rounds(
+                        evidence.router_loss_affected_samples,
+                        len(
+                            evidence.router_packet_loss_samples
+                        ),
+                    ),
+                )
+            )
+
         self._add_section(
             "Local network",
-            [
-                (
-                    "Router latency",
-                    self._metric(
-                        evidence.router_latency_average_ms,
-                        "ms",
-                    ),
-                ),
-                (
-                    "Router jitter",
-                    self._metric(
-                        evidence.router_jitter_ms,
-                        "ms",
-                    ),
-                ),
-                (
-                    "Router packet loss",
-                    self._percent(
-                        evidence.router_packet_loss_percent,
-                    ),
-                ),
-            ],
+            local_network_rows,
         )
+
+        internet_path_rows = [
+            (
+                "Internet latency",
+                self._metric(
+                    evidence.internet_latency_average_ms,
+                    "ms",
+                ),
+            ),
+            (
+                "Internet jitter",
+                self._metric(
+                    evidence.internet_jitter_ms,
+                    "ms",
+                ),
+            ),
+            (
+                "Internet packet loss",
+                self._percent(
+                    evidence.internet_packet_loss_percent,
+                ),
+            ),
+        ]
+
+        if evidence.internet_packet_loss_samples:
+            internet_path_rows.append(
+                (
+                    "Loss affected test rounds",
+                    self._rounds(
+                        evidence.internet_loss_affected_samples,
+                        len(
+                            evidence.internet_packet_loss_samples
+                        ),
+                    ),
+                )
+            )
 
         self._add_section(
             "Internet path",
-            [
-                (
-                    "Internet latency",
-                    self._metric(
-                        evidence.internet_latency_average_ms,
-                        "ms",
-                    ),
-                ),
-                (
-                    "Internet jitter",
-                    self._metric(
-                        evidence.internet_jitter_ms,
-                        "ms",
-                    ),
-                ),
-                (
-                    "Internet packet loss",
-                    self._percent(
-                        evidence.internet_packet_loss_percent,
-                    ),
-                ),
-            ],
+            internet_path_rows,
         )
 
         self._add_section(
@@ -375,7 +399,6 @@ class EvidencePage(QWidget):
     def _clear_content(self):
         while self.content_layout.count():
             item = self.content_layout.takeAt(0)
-
             widget = item.widget()
 
             if widget is not None:
@@ -393,7 +416,9 @@ class EvidencePage(QWidget):
             self,
             "Save ISP Diagnostic Report",
             str(
-                Path.home() / "Downloads" / default_name
+                Path.home()
+                / "Downloads"
+                / default_name
             ),
             "HTML Files (*.html)",
         )
@@ -434,6 +459,10 @@ class EvidencePage(QWidget):
             return "Not measured"
 
         return f"{value:.1f}%"
+
+    @staticmethod
+    def _rounds(affected_rounds, total_rounds):
+        return f"{affected_rounds} / {total_rounds}"
 
     @staticmethod
     def _value(value):
