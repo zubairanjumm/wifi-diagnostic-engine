@@ -5,6 +5,9 @@ interface RequestResult {
   latencyMs: number | null
 }
 
+const DOWNLOAD_SIZE_MB = 3
+const UPLOAD_SIZE_MB = 3
+
 function calculateAverage(values: number[]): number | null {
   if (values.length === 0) {
     return null
@@ -114,7 +117,7 @@ async function measureDownloadSpeed(
 
   try {
     const response = await fetch(
-      `${endpoint}?size_mb=10&test=${Date.now()}`,
+      `${endpoint}?size_mb=${DOWNLOAD_SIZE_MB}&test=${Date.now()}`,
       {
         method: "GET",
         cache: "no-store",
@@ -167,7 +170,7 @@ async function measureUploadSpeed(
   endpoint: string,
 ): Promise<number | null> {
   const sizeBytes =
-    5 * 1024 * 1024
+    UPLOAD_SIZE_MB * 1024 * 1024
 
   const payload =
     new Uint8Array(sizeBytes)
