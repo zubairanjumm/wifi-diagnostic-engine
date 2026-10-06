@@ -10,18 +10,14 @@ export function Feature({
   description,
 }: FeatureProps) {
   return (
-    <div className="border-t border-black/10 pt-5">
-      <span className="text-xs font-medium text-black/40">
-        {number}
-      </span>
-
-      <h3 className="mt-4 text-lg font-semibold">
+    <article className="feature-card">
+      <span className="feature-number">{number}</span>
+      <h3 className="mt-6 text-xl font-semibold tracking-[-0.02em] text-white">
         {title}
       </h3>
-
-      <p className="mt-2 text-sm leading-6 text-black/55">
+      <p className="mt-3 text-sm leading-7 text-slate-400">
         {description}
       </p>
-    </div>
+    </article>
   )
 }
