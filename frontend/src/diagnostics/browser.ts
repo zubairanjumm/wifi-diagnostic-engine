@@ -1,8 +1,6 @@
 import type { BrowserEvidence } from "../types/diagnostic"
 
 const DEFAULT_REQUEST_COUNT = 12
-const DOWNLOAD_SIZE_MB = 3
-const UPLOAD_SIZE_MB = 3
 
 function calculateAverage(values: number[]): number {
   if (values.length === 0) {
@@ -107,113 +105,8 @@ async function testRequest(
   return performance.now() - start
 }
 
-async function measureDownloadSpeed(
-  url: string,
-): Promise<number> {
-  const start = performance.now()
-
-  const response = await fetch(
-    `${url}?size_mb=${DOWNLOAD_SIZE_MB}&t=${Date.now()}`,
-    {
-      method: "GET",
-      cache: "no-store",
-    },
-  )
-
-  if (!response.ok) {
-    throw new Error(
-      `Download test failed with status ${response.status}`,
-    )
-  }
-
-  if (!response.body) {
-    throw new Error(
-      "Download response does not contain a readable body",
-    )
-  }
-
-  const reader =
-    response.body.getReader()
-
-  let totalBytes = 0
-
-  while (true) {
-    const { done, value } =
-      await reader.read()
-
-    if (done) {
-      break
-    }
-
-    if (value) {
-      totalBytes += value.byteLength
-    }
-  }
-
-  const elapsedSeconds =
-    (performance.now() - start) / 1000
-
-  if (elapsedSeconds <= 0) {
-    return 0
-  }
-
-  return (
-    (totalBytes * 8) /
-    elapsedSeconds /
-    1_000_000
-  )
-}
-
-async function measureUploadSpeed(
-  url: string,
-): Promise<number> {
-  const payload =
-    new Uint8Array(
-      UPLOAD_SIZE_MB *
-        1024 *
-        1024,
-    )
-
-  const start = performance.now()
-
-  const response = await fetch(
-    `${url}?t=${Date.now()}`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type":
-          "application/octet-stream",
-      },
-      body: payload,
-    },
-  )
-
-  if (!response.ok) {
-    throw new Error(
-      `Upload test failed with status ${response.status}`,
-    )
-  }
-
-  await response.arrayBuffer()
-
-  const elapsedSeconds =
-    (performance.now() - start) / 1000
-
-  if (elapsedSeconds <= 0) {
-    return 0
-  }
-
-  return (
-    (payload.byteLength * 8) /
-    elapsedSeconds /
-    1_000_000
-  )
-}
-
 export async function collectBrowserEvidence(
   diagnosticTestUrl: string,
-  downloadUrl: string,
-  uploadUrl: string,
 ): Promise<BrowserEvidence> {
   const latencies: number[] = []
 
@@ -254,55 +147,6 @@ export async function collectBrowserEvidence(
       ? (failedRequests /
           totalRequests) *
         100
-      : 0
-
-  const downloadSamples: number[] = []
-  const uploadSamples: number[] = []
-
-  for (
-    let index = 0;
-    index < 3;
-    index += 1
-  ) {
-    try {
-      downloadSamples.push(
-        await measureDownloadSpeed(
-          downloadUrl,
-        ),
-      )
-    } catch {
-      // Keep the remaining diagnostic measurements usable.
-    }
-  }
-
-  for (
-    let index = 0;
-    index < 3;
-    index += 1
-  ) {
-    try {
-      uploadSamples.push(
-        await measureUploadSpeed(
-          uploadUrl,
-        ),
-      )
-    } catch {
-      // Keep the remaining diagnostic measurements usable.
-    }
-  }
-
-  const downloadSpeed =
-    downloadSamples.length > 0
-      ? calculateAverage(
-          downloadSamples,
-        )
-      : 0
-
-  const uploadSpeed =
-    uploadSamples.length > 0
-      ? calculateAverage(
-          uploadSamples,
-        )
       : 0
 
   return {
@@ -349,10 +193,8 @@ export async function collectBrowserEvidence(
     browser_latency_jitter_ms:
       calculateJitter(latencies),
 
-    download_mbps:
-      downloadSpeed,
+    download_mbps: null,
 
-    upload_mbps:
-      uploadSpeed,
+    upload_mbps: null,
   }
 }

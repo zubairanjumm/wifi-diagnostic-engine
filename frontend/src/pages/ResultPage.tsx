@@ -1,3 +1,4 @@
+
 import type {
   BrowserEvidence,
   DiagnosticResponse,
@@ -145,22 +146,6 @@ export function ResultPage({
                 value={formatValue(
                   evidence.browser_latency_p95_ms,
                   " ms",
-                )}
-              />
-
-              <Metric
-                label="Download speed"
-                value={formatValue(
-                  evidence.download_mbps,
-                  " Mbps",
-                )}
-              />
-
-              <Metric
-                label="Upload speed"
-                value={formatValue(
-                  evidence.upload_mbps,
-                  " Mbps",
                 )}
               />
 

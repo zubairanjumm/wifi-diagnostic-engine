@@ -40,8 +40,6 @@ function App() {
       const browserEvidence =
         await collectBrowserEvidence(
           `${apiUrl}/api/diagnostic-test`,
-          `${apiUrl}/api/speed/download`,
-          `${apiUrl}/api/speed/upload`,
         )
       setEvidence(browserEvidence)
 
