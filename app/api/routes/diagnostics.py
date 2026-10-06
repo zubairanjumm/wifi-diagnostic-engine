@@ -59,7 +59,7 @@ def diagnostic_test():
 
 @router.get("/speed/download")
 def download_test(size_mb: int = 3):
-    size_mb = max(1, min(size_mb, 10))
+    size_mb = max(1, min(size_mb, 4))
 
     payload = b"0" * (
         size_mb * 1024 * 1024
