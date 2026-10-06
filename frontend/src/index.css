@@ -354,3 +354,134 @@ a {
     padding: 25px;
   }
 }
+
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.8);
+  color: #64748b;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35);
+  animation: live-pulse 1.8s infinite;
+}
+
+.network-visual {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 25px 0 18px;
+  padding: 4px 0;
+}
+
+.network-node {
+  display: flex;
+  min-width: 58px;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.node-icon {
+  display: flex;
+  width: 38px;
+  height: 38px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dbeafe;
+  border-radius: 11px;
+  background: #f8fbff;
+  color: #2563eb;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.network-node small {
+  color: #64748b;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.network-line {
+  position: relative;
+  height: 2px;
+  flex: 1;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #e2e8f0;
+}
+
+.network-line i {
+  position: absolute;
+  top: 0;
+  left: -25%;
+  width: 25%;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, transparent, #38bdf8, #2563eb);
+  animation: signal-flow 1.7s linear infinite;
+}
+
+.network-line:nth-of-type(4) i {
+  animation-delay: 0.55s;
+}
+
+.dashboard-card {
+  animation: card-float 5s ease-in-out infinite;
+}
+
+.signal-bars i {
+  transform-origin: bottom;
+  animation: signal-breathe 1.4s ease-in-out infinite;
+}
+
+.signal-bars i:nth-child(2) { animation-delay: 0.15s; }
+.signal-bars i:nth-child(3) { animation-delay: 0.3s; }
+.signal-bars i:nth-child(4) { animation-delay: 0.45s; }
+
+@keyframes live-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+}
+
+@keyframes signal-flow {
+  from { transform: translateX(0); }
+  to { transform: translateX(500%); }
+}
+
+@keyframes signal-breathe {
+  0%, 100% { transform: scaleY(0.72); opacity: 0.55; }
+  50% { transform: scaleY(1); opacity: 1; }
+}
+
+@keyframes card-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot,
+  .network-line i,
+  .dashboard-card,
+  .signal-bars i {
+    animation: none;
+  }
+}
